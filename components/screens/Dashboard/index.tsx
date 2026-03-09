@@ -1,0 +1,279 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { motion, type Variants, type Easing } from 'framer-motion';
+import Link from 'next/link';
+import {
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+} from 'recharts';
+import { Send, Activity, Lock, Split, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import CircuitBoard from '@/components/animations/CircuitBoard';
+import LiquidFill from '@/components/animations/LiquidFill';
+import {
+  mockWallet, mockTransactions, mockActivityChart,
+} from '@/lib/mock-data';
+
+function CountUp({ end, decimals = 0, prefix = '' }: { end: number; decimals?: number; prefix?: string }) {
+  const [val, setVal] = useState(0);
+  const ref = useRef(false);
+
+  useEffect(() => {
+    if (ref.current) return;
+    ref.current = true;
+    const dur = 1200;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min((now - start) / dur, 1);
+      const ease = 1 - Math.pow(1 - t, 3);
+      setVal(ease * end);
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [end]);
+
+  return <>{prefix}{val.toFixed(decimals)}</>;
+}
+
+const statusColor = (s: string) =>
+  s === 'active' ? 'var(--green)' : s === 'locked' ? 'var(--amber)' : 'var(--text-dim)';
+
+const QUICK_ACTIONS = [
+  { href: '/send', label: 'Send', icon: Send },
+  { href: '/stream', label: 'Stream', icon: Activity },
+  { href: '/escrow', label: 'Escrow', icon: Lock },
+  { href: '/split', label: 'Split', icon: Split },
+];
+
+const EASE_OUT: Easing = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const containerVariants: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08 } },
+};
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE_OUT } },
+};
+
+export default function DashboardScreen() {
+  const fillPct = (mockWallet.sbtcBalance / 0.1) * 100;
+
+  return (
+    <CircuitBoard>
+      <motion.div
+        className="flex-1 p-6 overflow-y-auto"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {/* Header */}
+        <motion.div variants={itemVariants} className="flex items-center justify-between mb-6">
+          <div>
+            <h1
+              className="text-2xl font-bold"
+              style={{ fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}
+            >
+              Dashboard
+            </h1>
+            <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
+              {mockWallet.shortAddress}
+            </p>
+          </div>
+          <div
+            className="px-3 py-1.5 rounded-lg text-xs font-mono border"
+            style={{ borderColor: 'var(--green)', color: 'var(--green)', background: 'rgba(34,197,94,0.08)' }}
+          >
+            Testnet
+          </div>
+        </motion.div>
+
+        {/* Balance + Stats row */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6">
+          {/* Liquid fill balance */}
+          <motion.div variants={itemVariants} className="lg:col-span-2">
+            <Card className="flex flex-col items-center py-6 gap-2">
+              <CardTitle className="mb-2">sBTC Balance</CardTitle>
+              <LiquidFill
+                fillPercent={fillPct}
+                value={mockWallet.sbtcBalance}
+                label="sBTC"
+                width={180}
+                height={180}
+              />
+              <div className="mt-2 text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
+                ≈ ${mockWallet.usdValue.toLocaleString()} USD
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Mini stat cards */}
+          <motion.div
+            variants={itemVariants}
+            className="lg:col-span-3 grid grid-cols-2 gap-3"
+          >
+            {[
+              { label: 'STX Balance', value: mockWallet.stxBalance, decimals: 1, suffix: ' STX' },
+              { label: 'USD Value', value: mockWallet.usdValue, decimals: 2, prefix: '$' },
+              { label: 'Transactions', value: mockTransactions.length, decimals: 0 },
+              { label: 'Active Streams', value: 1, decimals: 0 },
+            ].map(({ label, value, decimals, suffix, prefix }) => (
+              <Card key={label} className="flex flex-col justify-between p-4">
+                <div className="text-xs uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
+                  {label}
+                </div>
+                <div
+                  className="text-xl font-bold"
+                  style={{ fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}
+                >
+                  <CountUp end={value} decimals={decimals} prefix={prefix ?? ''} />
+                  {suffix ?? ''}
+                </div>
+              </Card>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Activity chart + Quick actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <motion.div variants={itemVariants} className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>7-Day Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={mockActivityChart}>
+                    <defs>
+                      <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#F15A22" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#F15A22" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="day"
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 10 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis hide />
+                    <Tooltip
+                      contentStyle={{
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--bg-border)',
+                        borderRadius: 8,
+                        color: 'var(--text-primary)',
+                        fontSize: 11,
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="volume"
+                      stroke="#F15A22"
+                      strokeWidth={2}
+                      fill="url(#areaGrad)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Quick actions */}
+          <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3">
+            {QUICK_ACTIONS.map(({ href, label, icon: Icon }) => (
+              <Link key={href} href={href}>
+                <motion.div
+                  className="h-full min-h-[80px] rounded-xl border flex flex-col items-center justify-center gap-2 cursor-pointer transition-all duration-200"
+                  style={{
+                    background: 'var(--bg-surface)',
+                    borderColor: 'var(--bg-border)',
+                  }}
+                  whileHover={{
+                    borderColor: 'var(--accent)',
+                    boxShadow: '0 0 16px var(--accent-glow)',
+                    y: -2,
+                  }}
+                >
+                  <Icon size={20} style={{ color: 'var(--accent)' }} />
+                  <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
+                    {label}
+                  </span>
+                </motion.div>
+              </Link>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Activity feed */}
+        <motion.div variants={itemVariants}>
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col gap-2">
+                {mockTransactions.map((tx, i) => (
+                  <motion.div
+                    key={tx.id}
+                    className="flex items-center gap-3 p-3 rounded-lg border"
+                    style={{
+                      background: 'var(--bg-elevated)',
+                      borderColor: 'var(--bg-border)',
+                    }}
+                    initial={{ opacity: 0, rotateY: 90 }}
+                    animate={{ opacity: 1, rotateY: 0 }}
+                    transition={{ delay: 0.5 + i * 0.08, duration: 0.4 }}
+                  >
+                    <div
+                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ background: 'var(--bg-surface)' }}
+                    >
+                      {tx.direction === 'incoming' ? (
+                        <ArrowDownLeft size={14} style={{ color: 'var(--green)' }} />
+                      ) : (
+                        <ArrowUpRight size={14} style={{ color: 'var(--accent)' }} />
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-xs font-semibold uppercase tracking-wider"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          {tx.type}
+                        </span>
+                        <motion.div
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ background: statusColor(tx.status) }}
+                          animate={{ opacity: tx.status === 'active' ? [1, 0.3, 1] : 1 }}
+                          transition={{ duration: 1.5, repeat: tx.status === 'active' ? Infinity : 0 }}
+                        />
+                      </div>
+                      <div className="text-xs font-mono truncate mt-0.5" style={{ color: 'var(--text-dim)' }}>
+                        {tx.direction === 'incoming' ? tx.from : (tx as { to?: string }).to}
+                      </div>
+                    </div>
+
+                    <div className="text-right flex-shrink-0">
+                      <div
+                        className="text-sm font-mono font-semibold"
+                        style={{ color: tx.direction === 'incoming' ? 'var(--green)' : 'var(--text-primary)' }}
+                      >
+                        {tx.direction === 'incoming' ? '+' : '-'}{tx.amount} sBTC
+                      </div>
+                      <div className="text-xs mt-0.5" style={{ color: 'var(--text-dim)' }}>
+                        {new Date(tx.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+    </CircuitBoard>
+  );
+}

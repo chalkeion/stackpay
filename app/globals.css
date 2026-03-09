@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-base:        #0D0D0D;
+  --bg-surface:     #111111;
+  --bg-elevated:    #1A1A1A;
+  --bg-border:      #2A2A2A;
+  --text-primary:   #F5F5F5;
+  --text-secondary: #888888;
+  --text-dim:       #444444;
+  --accent:         #F15A22;
+  --accent-dim:     #7A2D11;
+  --accent-glow:    rgba(241,90,34,0.25);
+  --green:          #22C55E;
+  --amber:          #F59E0B;
+  --blue:           #3B82F6;
+}
+
+/* Base body styles */
+html {
+  cursor: none;
+  background-color: var(--bg-base);
+}
+
+body {
+  color: var(--text-primary);
+  background-color: var(--bg-base);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grain overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px 128px;
+}
+
+/* Scanline effect */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.02;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent 38px,
+    rgba(255, 255, 255, 0.08) 38px,
+    rgba(255, 255, 255, 0.08) 40px
+  );
+}
+
+/* Background grid utility */
+.bg-grid {
+  background-image:
+    linear-gradient(var(--bg-border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--bg-border) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-surface);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-dim);
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .font-syne {
+    font-family: var(--font-syne), system-ui, sans-serif;
+  }
+
+  .font-mono-plex {
+    font-family: var(--font-ibm-plex-mono), 'Courier New', monospace;
+  }
+
+  .glow-accent {
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 40px var(--accent-glow);
+  }
+
+  .glow-accent-sm {
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .border-accent-glow {
+    border-color: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+}
