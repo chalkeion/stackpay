@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { useWalletContext } from '@/context/WalletContext';
+import { WalletChip } from '@/components/wallet/WalletDropdown';
 
 const NAV_LINKS = [
   { href: '#features', label: 'Features' },
@@ -13,6 +15,7 @@ const NAV_LINKS = [
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const { isConnected, openModal } = useWalletContext();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -68,15 +71,19 @@ export default function Navbar() {
         ))}
       </nav>
 
-      {/* CTA */}
+      {/* Wallet CTA */}
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 0.35 }}
       >
-        <Button variant="accent" size="sm">
-          Connect Wallet
-        </Button>
+        {isConnected ? (
+          <WalletChip />
+        ) : (
+          <Button variant="accent" size="sm" onClick={openModal}>
+            Connect Wallet
+          </Button>
+        )}
       </motion.div>
     </motion.header>
   );

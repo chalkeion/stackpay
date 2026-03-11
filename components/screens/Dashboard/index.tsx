@@ -6,17 +6,21 @@ import Link from 'next/link';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { Send, Activity, Lock, Split, ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { Send, Activity, Lock, Split, ArrowDownLeft, ArrowUpRight, Wallet } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import CircuitBoard from '@/components/animations/CircuitBoard';
 import LiquidFill from '@/components/animations/LiquidFill';
-import {
-  mockWallet, mockTransactions, mockActivityChart,
-} from '@/lib/mock-data';
+import { mockTransactions, mockActivityChart } from '@/lib/mock-data';
+import { useWalletContext } from '@/context/WalletContext';
+import { Button } from '@/components/ui/button';
 
 function CountUp({ end, decimals = 0, prefix = '' }: { end: number; decimals?: number; prefix?: string }) {
   const [val, setVal] = useState(0);
   const ref = useRef(false);
+
+  useEffect(() => {
+    ref.current = false;
+  }, [end]);
 
   useEffect(() => {
     if (ref.current) return;
@@ -33,6 +37,21 @@ function CountUp({ end, decimals = 0, prefix = '' }: { end: number; decimals?: n
   }, [end]);
 
   return <>{prefix}{val.toFixed(decimals)}</>;
+}
+
+function BalanceSkeleton({ width = '60%' }: { width?: string }) {
+  return (
+    <motion.div
+      style={{
+        height: 22,
+        borderRadius: 6,
+        background: 'rgba(255,255,255,0.08)',
+        width,
+      }}
+      animate={{ opacity: [0.4, 0.8, 0.4] }}
+      transition={{ duration: 1.5, repeat: Infinity }}
+    />
+  );
 }
 
 const statusColor = (s: string) =>
@@ -56,8 +75,101 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: EASE_OUT } },
 };
 
+/* ── not-connected prompt ─────────────────────────────────────────── */
+
+function NotConnectedPrompt() {
+  const { openModal } = useWalletContext();
+
+  return (
+    <CircuitBoard>
+      <div
+        style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 24,
+          padding: 32,
+          textAlign: 'center',
+        }}
+      >
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 20,
+            background: 'rgba(241,90,34,0.1)',
+            border: '1px solid rgba(241,90,34,0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Wallet size={32} style={{ color: 'var(--accent)' }} />
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.4, ease: EASE_OUT }}
+        >
+          <h2
+            style={{
+              fontFamily: 'var(--font-syne)',
+              fontWeight: 700,
+              fontSize: 24,
+              color: 'var(--text-primary)',
+              margin: '0 0 8px',
+            }}
+          >
+            Connect Your Wallet
+          </h2>
+          <p
+            style={{
+              fontFamily: 'var(--font-ibm-plex-mono)',
+              fontSize: 14,
+              color: 'var(--text-secondary)',
+              margin: 0,
+              maxWidth: 340,
+            }}
+          >
+            Connect a Stacks wallet to view your dashboard, balances, and transaction history.
+          </p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.4, ease: EASE_OUT }}
+        >
+          <Button variant="accent" size="lg" onClick={openModal}>
+            Connect Wallet
+          </Button>
+        </motion.div>
+      </div>
+    </CircuitBoard>
+  );
+}
+
+/* ── connected dashboard ─────────────────────────────────────────── */
+
 export default function DashboardScreen() {
-  const fillPct = (mockWallet.sbtcBalance / 0.1) * 100;
+  const { isConnected, address, stxBalance, sbtcBalance } = useWalletContext();
+
+  if (!isConnected) return <NotConnectedPrompt />;
+
+  const shortAddress = address
+    ? `${address.slice(0, 6)}...${address.slice(-4)}`
+    : '';
+
+  const sbtcVal = sbtcBalance ?? 0;
+  const stxVal = stxBalance ?? 0;
+  const fillPct = Math.min((sbtcVal / 0.1) * 100, 100);
+  const usdValue = sbtcVal * 100_000; // rough sBTC→USD (testnet mock rate)
 
   return (
     <CircuitBoard>
@@ -77,7 +189,7 @@ export default function DashboardScreen() {
               Dashboard
             </h1>
             <p className="text-xs mt-0.5 font-mono" style={{ color: 'var(--text-secondary)' }}>
-              {mockWallet.shortAddress}
+              {shortAddress}
             </p>
           </div>
           <div
@@ -94,15 +206,26 @@ export default function DashboardScreen() {
           <motion.div variants={itemVariants} className="lg:col-span-2">
             <Card className="flex flex-col items-center py-6 gap-2">
               <CardTitle className="mb-2">sBTC Balance</CardTitle>
-              <LiquidFill
-                fillPercent={fillPct}
-                value={mockWallet.sbtcBalance}
-                label="sBTC"
-                width={180}
-                height={180}
-              />
+              {sbtcBalance === null ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '20px 0' }}>
+                  <BalanceSkeleton width="80px" />
+                  <BalanceSkeleton width="60px" />
+                </div>
+              ) : (
+                <LiquidFill
+                  fillPercent={fillPct}
+                  value={sbtcVal}
+                  label="sBTC"
+                  width={180}
+                  height={180}
+                />
+              )}
               <div className="mt-2 text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>
-                ≈ ${mockWallet.usdValue.toLocaleString()} USD
+                {sbtcBalance === null ? (
+                  <BalanceSkeleton width="120px" />
+                ) : (
+                  `≈ $${usdValue.toLocaleString(undefined, { maximumFractionDigits: 2 })} USD`
+                )}
               </div>
             </Card>
           </motion.div>
@@ -113,11 +236,33 @@ export default function DashboardScreen() {
             className="lg:col-span-3 grid grid-cols-2 gap-3"
           >
             {[
-              { label: 'STX Balance', value: mockWallet.stxBalance, decimals: 1, suffix: ' STX' },
-              { label: 'USD Value', value: mockWallet.usdValue, decimals: 2, prefix: '$' },
-              { label: 'Transactions', value: mockTransactions.length, decimals: 0 },
-              { label: 'Active Streams', value: 1, decimals: 0 },
-            ].map(({ label, value, decimals, suffix, prefix }) => (
+              {
+                label: 'STX Balance',
+                value: stxVal,
+                decimals: 2,
+                suffix: ' STX',
+                loading: stxBalance === null,
+              },
+              {
+                label: 'USD Value',
+                value: usdValue,
+                decimals: 2,
+                prefix: '$',
+                loading: sbtcBalance === null,
+              },
+              {
+                label: 'Transactions',
+                value: mockTransactions.length,
+                decimals: 0,
+                loading: false,
+              },
+              {
+                label: 'Active Streams',
+                value: 0,
+                decimals: 0,
+                loading: false,
+              },
+            ].map(({ label, value, decimals, suffix, prefix, loading }) => (
               <Card key={label} className="flex flex-col justify-between p-4">
                 <div className="text-xs uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>
                   {label}
@@ -126,8 +271,14 @@ export default function DashboardScreen() {
                   className="text-xl font-bold"
                   style={{ fontFamily: 'var(--font-syne)', color: 'var(--text-primary)' }}
                 >
-                  <CountUp end={value} decimals={decimals} prefix={prefix ?? ''} />
-                  {suffix ?? ''}
+                  {loading ? (
+                    <BalanceSkeleton width="70%" />
+                  ) : (
+                    <>
+                      <CountUp end={value} decimals={decimals} prefix={prefix ?? ''} />
+                      {suffix ?? ''}
+                    </>
+                  )}
                 </div>
               </Card>
             ))}
