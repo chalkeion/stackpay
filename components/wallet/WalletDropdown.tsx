@@ -13,7 +13,7 @@ function truncate(addr: string) {
 
 export function WalletChip() {
   const { address, stxBalance, sbtcBalance, disconnect } = useWalletContext();
-  const { triggerDisconnect } = usePageTransition();
+  const { triggerDisconnect, disconnectPhase } = usePageTransition();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -38,7 +38,12 @@ export function WalletChip() {
   };
 
   return (
-    <div ref={ref} style={{ position: 'relative' }}>
+    <motion.div
+      ref={ref}
+      style={{ position: 'relative' }}
+      animate={disconnectPhase >= 1 ? { scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+      transition={{ duration: 0.15, ease: 'easeIn' }}
+    >
       {/* chip button */}
       <motion.button
         onClick={() => setOpen((v) => !v)}
@@ -59,16 +64,24 @@ export function WalletChip() {
         }}
         transition={{ duration: 0.15 }}
       >
-        {/* green connected dot */}
+        {/* green connected dot — pulses red when disconnect starts */}
         <motion.div
           style={{
             width: 7,
             height: 7,
             borderRadius: '50%',
-            background: 'var(--green)',
+            background: disconnectPhase === 1 ? '#ef4444' : 'var(--green)',
           }}
-          animate={{ opacity: [1, 0.4, 1] }}
-          transition={{ duration: 2, repeat: Infinity }}
+          animate={
+            disconnectPhase === 1
+              ? { scale: [1, 1.8, 0], opacity: [1, 1, 0] }
+              : { opacity: [1, 0.4, 1] }
+          }
+          transition={
+            disconnectPhase === 1
+              ? { duration: 0.15, ease: 'easeIn', times: [0, 0.5, 1] }
+              : { duration: 2, repeat: Infinity }
+          }
         />
 
         <span
@@ -282,6 +295,6 @@ export function WalletChip() {
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

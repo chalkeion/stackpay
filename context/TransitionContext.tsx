@@ -17,6 +17,7 @@ interface TransitionContextValue {
   origin: { x: number; y: number };
   wasConnectTransition: boolean;
   ctaPulse: boolean;
+  disconnectPhase: number;
   storeOrigin: (x: number, y: number) => void;
   triggerConnect: () => void;
   triggerBoot: () => void;
@@ -33,7 +34,9 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
   const [wasConnectTransition, setWasConnectTransition] = useState(false);
   const [ctaPulse, setCTPulse] = useState(false);
+  const [disconnectPhase, setDisconnectPhase] = useState(0);
   const bootPlayedRef = useRef(false);
+  const disconnectTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const storeOrigin = useCallback((x: number, y: number) => {
     setOrigin({ x, y });
@@ -54,11 +57,22 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
 
   const triggerDisconnect = useCallback(() => {
     setActiveTransition('disconnect');
+    setDisconnectPhase(1);
+    const timers = [
+      setTimeout(() => setDisconnectPhase(2), 150),
+      setTimeout(() => setDisconnectPhase(3), 400),
+      setTimeout(() => setDisconnectPhase(4), 650),
+      setTimeout(() => setDisconnectPhase(5), 800),
+    ];
+    disconnectTimersRef.current = timers;
   }, []);
 
   const completeTransition = useCallback(() => {
     setActiveTransition(null);
     setWasConnectTransition(false);
+    setDisconnectPhase(0);
+    disconnectTimersRef.current.forEach(clearTimeout);
+    disconnectTimersRef.current = [];
   }, []);
 
   return (
@@ -68,6 +82,7 @@ export function TransitionProvider({ children }: { children: ReactNode }) {
         origin,
         wasConnectTransition,
         ctaPulse,
+        disconnectPhase,
         storeOrigin,
         triggerConnect,
         triggerBoot,

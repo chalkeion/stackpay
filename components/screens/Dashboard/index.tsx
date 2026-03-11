@@ -12,6 +12,8 @@ import CircuitBoard from '@/components/animations/CircuitBoard';
 import LiquidFill from '@/components/animations/LiquidFill';
 import { mockTransactions, mockActivityChart } from '@/lib/mock-data';
 import { useWalletContext } from '@/context/WalletContext';
+import { usePageTransition } from '@/context/TransitionContext';
+import { WalletChip } from '@/components/wallet/WalletDropdown';
 import { Button } from '@/components/ui/button';
 
 function CountUp({ end, decimals = 0, prefix = '' }: { end: number; decimals?: number; prefix?: string }) {
@@ -159,6 +161,7 @@ function NotConnectedPrompt() {
 
 export default function DashboardScreen() {
   const { isConnected, address, stxBalance, sbtcBalance } = useWalletContext();
+  const { disconnectPhase } = usePageTransition();
 
   if (!isConnected) return <NotConnectedPrompt />;
 
@@ -173,6 +176,18 @@ export default function DashboardScreen() {
 
   return (
     <CircuitBoard>
+      {/* Disconnect animation wrapper — phases 2 (desaturate) and 3 (compress) */}
+      <motion.div
+        style={{ width: '100%', height: '100%', overflow: 'hidden', transformOrigin: 'center center' }}
+        animate={
+          disconnectPhase >= 3
+            ? { scale: 0.88, filter: 'blur(6px)', opacity: 0.4 }
+            : disconnectPhase >= 2
+            ? { filter: 'saturate(0)', scale: 1, opacity: 1 }
+            : {}
+        }
+        transition={{ duration: 0.25, ease: 'easeIn' }}
+      >
       <motion.div
         className="flex-1 p-6 overflow-y-auto"
         variants={containerVariants}
@@ -192,11 +207,14 @@ export default function DashboardScreen() {
               {shortAddress}
             </p>
           </div>
-          <div
-            className="px-3 py-1.5 rounded-lg text-xs font-mono border"
-            style={{ borderColor: 'var(--green)', color: 'var(--green)', background: 'rgba(34,197,94,0.08)' }}
-          >
-            Testnet
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              className="px-3 py-1.5 rounded-lg text-xs font-mono border"
+              style={{ borderColor: 'var(--green)', color: 'var(--green)', background: 'rgba(34,197,94,0.08)' }}
+            >
+              Testnet
+            </div>
+            <WalletChip />
           </div>
         </motion.div>
 
@@ -424,6 +442,7 @@ export default function DashboardScreen() {
             </CardContent>
           </Card>
         </motion.div>
+      </motion.div>
       </motion.div>
     </CircuitBoard>
   );

@@ -54,7 +54,7 @@ function drawDissolve(
 // ── main component ───────────────────────────────────────────────────────────
 
 export function DashboardTransition() {
-  const { activeTransition, origin, completeTransition } = usePageTransition();
+  const { activeTransition, origin, completeTransition, disconnectPhase } = usePageTransition();
   const { disconnect } = useWalletContext();
   const router = useRouter();
 
@@ -173,31 +173,35 @@ export function DashboardTransition() {
   }, [activeTransition, completeTransition]);
 
   // ── disconnect transition ──────────────────────────────────────────────────
-  const [showImplode, setShowImplode] = useState(false);
+  // Phase 4: CRT scaleY collapse
+  const [showCRT, setShowCRT] = useState(false);
+  const [showOrangeLine, setShowOrangeLine] = useState(false);
 
   useEffect(() => {
-    if (activeTransition !== 'disconnect') return;
+    if (disconnectPhase === 4) {
+      setShowCRT(true);
+      // Orange line appears as the CRT collapses to a line at centre
+      const t = setTimeout(() => setShowOrangeLine(true), 120);
+      return () => clearTimeout(t);
+    }
+    if (disconnectPhase === 0) {
+      setShowCRT(false);
+      setShowOrangeLine(false);
+    }
+  }, [disconnectPhase]);
 
-    // Disconnect wallet state immediately
+  // Phase 5: clear wallet state + redirect
+  useEffect(() => {
+    if (disconnectPhase !== 5) return;
     disconnect();
-    setShowImplode(true);
-
-    // Navigate once screen is fully dark (300ms)
-    const t1 = setTimeout(() => {
-      router.push('/');
-    }, 320);
-
-    // End animation
-    const t2 = setTimeout(() => {
-      setShowImplode(false);
+    router.push('/');
+    const t = setTimeout(() => {
+      setShowCRT(false);
+      setShowOrangeLine(false);
       completeTransition();
-    }, 750);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, [activeTransition, completeTransition, disconnect, router]);
+    }, 500);
+    return () => clearTimeout(t);
+  }, [disconnectPhase, completeTransition, disconnect, router]);
 
   const isActive = activeTransition !== null;
 
@@ -316,25 +320,42 @@ export function DashboardTransition() {
             )}
           </AnimatePresence>
 
-          {/* ── DISCONNECT: implode ── */}
+          {/* ── DISCONNECT Phase 4: CRT scaleY collapse ── */}
           <AnimatePresence>
-            {showImplode && (
+            {showCRT && (
               <motion.div
-                key="implode"
-                initial={{ opacity: 0, scale: 1 }}
-                animate={{
-                  opacity: [0, 0.92, 0.92, 0.92, 0],
-                  scale: [1, 1, 1, 0.04, 0],
-                }}
-                transition={{
-                  duration: 0.75,
-                  times: [0, 0.28, 0.45, 0.85, 1],
-                  ease: 'easeIn',
-                }}
+                key="crt-collapse"
+                initial={{ scaleY: 1, opacity: 1 }}
+                animate={{ scaleY: 0 }}
+                transition={{ duration: 0.15, ease: 'easeIn' }}
                 style={{
                   position: 'absolute',
                   inset: 0,
                   background: '#0D0D0D',
+                  transformOrigin: 'center center',
+                }}
+              />
+            )}
+          </AnimatePresence>
+
+          {/* ── DISCONNECT Phase 4: orange CRT line pulse ── */}
+          <AnimatePresence>
+            {showOrangeLine && (
+              <motion.div
+                key="crt-line"
+                initial={{ opacity: 1, scaleX: 1 }}
+                animate={{ opacity: 0, scaleX: 0.3 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: 0,
+                  right: 0,
+                  height: 2,
+                  marginTop: -1,
+                  background:
+                    'linear-gradient(90deg, transparent, #F15A22 20%, #F15A22 80%, transparent)',
+                  boxShadow: '0 0 16px #F15A22, 0 0 32px rgba(241,90,34,0.5)',
                   transformOrigin: 'center center',
                 }}
               />
