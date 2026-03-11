@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useWalletContext } from '@/context/WalletContext';
 import { WalletChip } from '@/components/wallet/WalletDropdown';
+import { usePageTransition } from '@/context/TransitionContext';
 
 const NAV_LINKS = [
   { href: '#features', label: 'Features' },
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const { isConnected, openModal } = useWalletContext();
+  const { storeOrigin, ctaPulse } = usePageTransition();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -80,9 +82,36 @@ export default function Navbar() {
         {isConnected ? (
           <WalletChip />
         ) : (
-          <Button variant="accent" size="sm" onClick={openModal}>
-            Connect Wallet
-          </Button>
+          <motion.div
+            animate={ctaPulse ? {
+              boxShadow: [
+                '0 0 0 0 rgba(241,90,34,0)',
+                '0 0 0 8px rgba(241,90,34,0.3)',
+                '0 0 0 0 rgba(241,90,34,0)',
+                '0 0 0 8px rgba(241,90,34,0.3)',
+                '0 0 0 0 rgba(241,90,34,0)',
+                '0 0 0 8px rgba(241,90,34,0.3)',
+                '0 0 0 0 rgba(241,90,34,0)',
+              ]
+            } : {}}
+            transition={{ duration: 2, times: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 1] }}
+            style={{ borderRadius: 8 }}
+          >
+            <Button
+              variant="accent"
+              size="sm"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                storeOrigin(
+                  rect.left + rect.width / 2,
+                  rect.top + rect.height / 2,
+                );
+                openModal();
+              }}
+            >
+              Connect Wallet
+            </Button>
+          </motion.div>
         )}
       </motion.div>
     </motion.header>

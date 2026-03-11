@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, ExternalLink } from 'lucide-react';
 import { useWalletContext, type WalletType } from '@/context/WalletContext';
+import { usePageTransition } from '@/context/TransitionContext';
 
 /* ─── wallet config ─────────────────────────────────────────────── */
 
@@ -107,6 +108,7 @@ function Spinner() {
 
 export function WalletModal() {
   const { isModalOpen, closeModal, connect, connectingWallet, isLoading } = useWalletContext();
+  const { triggerConnect } = usePageTransition();
 
   const [detected, setDetected] = useState<Record<WalletType, boolean>>({
     hiro: false,
@@ -136,6 +138,8 @@ export function WalletModal() {
     }
     try {
       await connect(walletType);
+      // Connection successful — trigger the portal transition
+      triggerConnect();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Connection failed. Please try again.';
       if (!msg.toLowerCase().includes('cancel') && !msg.toLowerCase().includes('reject')) {

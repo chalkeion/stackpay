@@ -77,6 +77,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     if (saved) {
       setAddress(saved);
       setIsConnected(true);
+      // Re-sync cookie in case it was cleared by browser
+      document.cookie = 'stackpay_connected=1; path=/; max-age=86400';
       fetchBalances(saved).then(({ stx, sbtc }) => {
         setStxBalance(stx);
         setSbtcBalance(sbtc);
@@ -142,6 +144,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       // Persist for session restore across page reloads
       localStorage.setItem(LS_ADDRESS, addr);
       localStorage.setItem(LS_WALLET,  walletType);
+      localStorage.setItem('stackpay_connected', '1');
+      document.cookie = 'stackpay_connected=1; path=/; max-age=86400';
 
       setAddress(addr);
       setIsConnected(true);
@@ -164,6 +168,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     try { stacksDisconnect(); } catch { /* ignore */ }
     localStorage.removeItem(LS_ADDRESS);
     localStorage.removeItem(LS_WALLET);
+    localStorage.removeItem('stackpay_connected');
+    document.cookie = 'stackpay_connected=; path=/; max-age=0';
     setAddress(null);
     setStxBalance(null);
     setSbtcBalance(null);

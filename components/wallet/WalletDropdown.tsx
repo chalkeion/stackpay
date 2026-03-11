@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, Copy, Check, LogOut } from 'lucide-react';
 import { useWalletContext } from '@/context/WalletContext';
+import { usePageTransition } from '@/context/TransitionContext';
 
 function truncate(addr: string) {
   if (!addr || addr.length < 12) return addr;
@@ -12,6 +13,7 @@ function truncate(addr: string) {
 
 export function WalletChip() {
   const { address, stxBalance, sbtcBalance, disconnect } = useWalletContext();
+  const { triggerDisconnect } = usePageTransition();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -250,8 +252,8 @@ export function WalletChip() {
             {/* disconnect */}
             <motion.button
               onClick={() => {
-                disconnect();
                 setOpen(false);
+                triggerDisconnect();
               }}
               style={{
                 display: 'flex',
