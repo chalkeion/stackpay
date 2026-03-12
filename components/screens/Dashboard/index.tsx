@@ -27,6 +27,7 @@ import { mockTransactions, mockActivityChart } from "@/lib/mock-data";
 import { useWalletContext } from "@/context/WalletContext";
 import { usePageTransition } from "@/context/TransitionContext";
 import { Button } from "@/components/ui/button";
+import { getTokenPrices } from "@/lib/getTokensPrices";
 
 function CountUp({
   end,
@@ -190,8 +191,13 @@ function NotConnectedPrompt() {
 /* ── connected dashboard ─────────────────────────────────────────── */
 
 export default function DashboardScreen() {
+  const [prices, setPrices] = useState({ stx: 0, btc: 0 })
   const { isConnected, address, stxBalance, sbtcBalance } = useWalletContext();
   const { disconnectPhase } = usePageTransition();
+
+  useEffect(() => {
+    getTokenPrices().then(setPrices)
+  }, [])
 
   if (!isConnected) return <NotConnectedPrompt />;
 
@@ -202,7 +208,7 @@ export default function DashboardScreen() {
   const sbtcVal = sbtcBalance ?? 0;
   const stxVal = stxBalance ?? 0;
   const fillPct = Math.min((sbtcVal / 0.1) * 100, 100);
-  const usdValue = sbtcVal * 100_000; // rough sBTC→USD (testnet mock rate)
+  const usdValue = (sbtcVal * prices.btc) + (stxVal * prices.stx);
 
   return (
     <>
