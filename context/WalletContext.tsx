@@ -13,7 +13,7 @@ import {
   setSelectedProviderId,
   getStacksProvider,
 } from '@stacks/connect';
-import { fetchAccountBalances } from '@/lib/account';
+import { fetchAccountBalances } from '@/lib/getUserAccountDetails';
 
 export type WalletType = 'hiro' | 'leather' | 'xverse';
 

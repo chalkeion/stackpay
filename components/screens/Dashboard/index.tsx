@@ -28,6 +28,7 @@ import { useWalletContext } from "@/context/WalletContext";
 import { usePageTransition } from "@/context/TransitionContext";
 import { Button } from "@/components/ui/button";
 import { getTokenPrices } from "@/lib/getTokensPrices";
+import { fetchUserTransactions } from "@/lib/getUserAccountDetails";
 
 function CountUp({
   end,
@@ -83,7 +84,7 @@ function BalanceSkeleton({ width = "60%" }: { width?: string }) {
 }
 
 const statusColor = (s: string) =>
-  s === "active"
+  s === "success"
     ? "var(--green)"
     : s === "locked"
       ? "var(--amber)"
@@ -192,14 +193,23 @@ function NotConnectedPrompt() {
 
 export default function DashboardScreen() {
   const [prices, setPrices] = useState({ stx: 0, btc: 0 })
+  const [transactions, setTransactions] = useState<{txId: string, amount: string, type: string, timestamp: string, status: string, sender: string, recipient: string}[]>([])
   const { isConnected, address, stxBalance, sbtcBalance } = useWalletContext();
   const { disconnectPhase } = usePageTransition();
 
   useEffect(() => {
+    if(!address) return;
     getTokenPrices().then(setPrices)
-  }, [])
-
+    fetchUserTransactions(address).then(
+      (res) => {
+        setTransactions(res.transactions)
+        console.log("the transactions", res.transactions)
+      }
+    )
+  }, [address])
+  
   if (!isConnected) return <NotConnectedPrompt />;
+  
 
   const shortAddress = address
     ? `${address.slice(0, 6)}...${address.slice(-4)}`
@@ -328,7 +338,7 @@ export default function DashboardScreen() {
                 },
                 {
                   label: "Transactions",
-                  value: mockTransactions.length,
+                  value: transactions.length,
                   decimals: 0,
                   loading: false,
                 },
@@ -470,9 +480,9 @@ export default function DashboardScreen() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-col gap-2">
-                  {mockTransactions.map((tx, i) => (
+                  {transactions.map((tx, i) => (
                     <motion.div
-                      key={tx.id}
+                      key={tx.txId}
                       className="flex items-center gap-3 p-3 rounded-lg border"
                       style={{
                         background: "var(--bg-elevated)",
@@ -486,7 +496,7 @@ export default function DashboardScreen() {
                         className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
                         style={{ background: "var(--bg-surface)" }}
                       >
-                        {tx.direction === "incoming" ? (
+                        {!(tx.sender === address) ? (
                           <ArrowDownLeft
                             size={14}
                             style={{ color: "var(--green)" }}
@@ -511,11 +521,11 @@ export default function DashboardScreen() {
                             className="w-1.5 h-1.5 rounded-full"
                             style={{ background: statusColor(tx.status) }}
                             animate={{
-                              opacity: tx.status === "active" ? [1, 0.3, 1] : 1,
+                              opacity: tx.status === "success" ? [1, 0.3, 1] : 1,
                             }}
                             transition={{
                               duration: 1.5,
-                              repeat: tx.status === "active" ? Infinity : 0,
+                              repeat: tx.status === "success" ? Infinity : 0,
                             }}
                           />
                         </div>
@@ -523,9 +533,7 @@ export default function DashboardScreen() {
                           className="text-xs font-mono truncate mt-0.5"
                           style={{ color: "var(--text-dim)" }}
                         >
-                          {tx.direction === "incoming"
-                            ? tx.from
-                            : (tx as { to?: string }).to}
+                          {!(tx.sender === address) ? tx.sender : tx.recipient}
                         </div>
                       </div>
 
@@ -534,12 +542,12 @@ export default function DashboardScreen() {
                           className="text-sm font-mono font-semibold"
                           style={{
                             color:
-                              tx.direction === "incoming"
+                              !(tx.sender === address)
                                 ? "var(--green)"
                                 : "var(--text-primary)",
                           }}
                         >
-                          {tx.direction === "incoming" ? "+" : "-"}
+                          {(tx.sender === address) ? "-" : "+"}
                           {tx.amount} sBTC
                         </div>
                         <div
