@@ -1,11 +1,3 @@
-export const mockWallet = {
-  address: 'SP2X4MCQB52MZJAP5RJPXQ4P5MGJWNBM2D9HB1GK',
-  shortAddress: 'SP2X4...1GK',
-  sbtcBalance: 0.04821,
-  stxBalance: 1240.5,
-  usdValue: 4821.00,
-};
-
 export const mockTransactions = [
   {
     id: '0x1a2b...',
