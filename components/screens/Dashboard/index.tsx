@@ -309,7 +309,7 @@ export default function DashboardScreen() {
             {/* Mini stat cards */}
             <motion.div
               variants={itemVariants}
-              className="lg:col-span-3 grid grid-cols-2 md:grid-cols-4 gap-3"
+              className="lg:col-span-3 grid grid-cols-2 md:grid-cols-2 gap-3"
             >
               {[
                 {
