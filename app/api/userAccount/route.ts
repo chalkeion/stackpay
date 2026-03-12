@@ -3,6 +3,20 @@ import { NextRequest, NextResponse } from 'next/server'
 const HIRO_BASE = 'https://api.testnet.hiro.so'
 const SBTC_CONTRACT = 'SM3VDXK3WZZSA84XXFKAFAF15NNZX32CTSG82JFQ4.sbtc-token'
 
+interface HiroTransaction {
+  tx_id:        string
+  tx_type:      'token_transfer' | 'contract_call' | 'smart_contract' | 'coinbase' | 'poison_microblock'
+  tx_status:    'success' | 'pending' | 'failed' | 'abort_by_response' | 'abort_by_post_condition'
+  sender_address: string
+  fee_rate:     string
+  burn_block_time_iso: string
+  token_transfer?: {
+    recipient_address: string
+    amount:            string
+    memo:              string
+  }
+}
+
 export async function GET(req: NextRequest) {
   const address = req.nextUrl.searchParams.get('address')
   const type    = req.nextUrl.searchParams.get('type') ?? 'balances' // 'balances' | 'transactions' | 'all'
@@ -43,7 +57,7 @@ export async function GET(req: NextRequest) {
       const data = await res.json()
 
       return {
-        transactions: data.results.map((tx: any) => ({
+        transactions: data.results.map((tx: HiroTransaction) => ({
           txId:      tx.tx_id,
           type:      tx.tx_type,
           status:    tx.tx_status,
