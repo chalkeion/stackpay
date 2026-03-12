@@ -176,7 +176,7 @@ export function WalletModal() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            onClick={closeModal}
+            onClick={() => closeModal()}
             style={{
               position: 'fixed',
               inset: 0,
@@ -285,7 +285,7 @@ export function WalletModal() {
                   </div>
 
                   <motion.button
-                    onClick={closeModal}
+                    onClick={() => closeModal()}
                     disabled={isLoading}
                     style={{
                       background: 'none',
