@@ -23,7 +23,7 @@ import {
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import CircuitBoard from "@/components/animations/CircuitBoard";
 import LiquidFill from "@/components/animations/LiquidFill";
-import { mockTransactions, mockActivityChart } from "@/lib/mock-data";
+import { mockActivityChart } from "@/lib/mock-data";
 import { useWalletContext } from "@/context/WalletContext";
 import { usePageTransition } from "@/context/TransitionContext";
 import { Button } from "@/components/ui/button";

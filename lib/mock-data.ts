@@ -1,33 +1,3 @@
-export const mockTransactions = [
-  {
-    id: '0x1a2b...',
-    type: 'stream',
-    direction: 'incoming',
-    amount: 0.001,
-    from: 'SP3K...',
-    status: 'active',
-    timestamp: Date.now() - 60000,
-  },
-  {
-    id: '0x3c4d...',
-    type: 'escrow',
-    direction: 'outgoing',
-    amount: 0.025,
-    to: 'SP7M...',
-    status: 'locked',
-    timestamp: Date.now() - 3600000,
-  },
-  {
-    id: '0x5e6f...',
-    type: 'split',
-    direction: 'incoming',
-    amount: 0.008,
-    from: 'SP1N...',
-    status: 'complete',
-    timestamp: Date.now() - 86400000,
-  },
-];
-
 export const mockStream = {
   id: 'stream-001',
   recipient: 'SP3KN...8QR',
